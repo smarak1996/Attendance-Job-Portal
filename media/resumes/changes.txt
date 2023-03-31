@@ -1,0 +1,36 @@
+
+Please change the 'v1' to 'v2' for the API endpoints mentioned below:
+    eg: "/api/v1/otp" will be "/api/v2/otp"
+
+Authentication:
+
+    /api/v1/otp
+
+    /api/v1/otp/verify
+
+    /api/v1/organization/member
+
+    /api/v1/onboard/super_admin
+
+Feed:
+
+    /api/v1/meeting/<string:id>
+
+    /api/v1/meeting/guest/<string:id>
+
+    /api/v1/channel
+
+    /api/v1/meeting_instance
+
+    /api/v1/channel/meeting/<string:id>
+
+    /api/v1/channel/bulk_upload_stream
+
+StoreFront:
+
+    /api/v1/store_follow
+
+Enterprise:
+
+    /api/v1/enterprise
+

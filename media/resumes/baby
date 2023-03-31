@@ -1,0 +1,60 @@
+class GetAllUsersListResource(Resource):
+
+    @staticmethod
+    @token_required
+    def post(user_name, is_verified):
+        try:
+            # client = pymongo.MongoClient("mongodb://localhost:27017/")
+            # db = client["odrd"]
+            # user_collection = db["user"]
+            Authtoken = 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJHSjZmTXF2VV9kcHl0VVpNZDNyNkttSmQ1UG9kZlktV09uY1NFZkdOU2JFIn0.eyJleHAiOjE2ODM1MjkzMDQsImlhdCI6MTY3ODM0NTMwNCwianRpIjoiNTJhNzZlN2YtM2U1ZS00N2YxLWI2ZTUtZWNiYzE5ZDkwZjFjIiwiaXNzIjoiaHR0cHM6Ly9pZC5teW4uZ2xvYmFsL2F1dGgvcmVhbG1zL215biIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI3ZDFjNzgwYi05MTBmLTRjZjUtOWZhNi02NWU4ZGY1ZTNiZTYiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJteW4tY2xpZW50Iiwic2Vzc2lvbl9zdGF0ZSI6ImIyOTVjMGYwLTMwYWItNGQ1Ni1iN2EyLWNiYTU1NmVjYjNjYSIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiIiwiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiIsImRlZmF1bHQtcm9sZXMtbXluIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJlbWFpbCBwcm9maWxlIiwic2lkIjoiYjI5NWMwZjAtMzBhYi00ZDU2LWI3YTItY2JhNTU2ZWNiM2NhIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoiUmFqdSBOYWdhdmkiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJyd3p0MWFsIiwiZ2l2ZW5fbmFtZSI6IlJhanUiLCJmYW1pbHlfbmFtZSI6Ik5hZ2F2aSJ9.Q-_xeRR6ZeT1pkuVMFDtYSDZ2WKm2aadsyle3IcyxKxkpRvnniOSGNh32fgGw1FmVnSmyfVtfmeoJ39yoJvUFVVnRSs9TSeHevp95w4lTj-v_HomtVZxTGQJ1fUdDyH5g6CKKuiYUM_pQ_GoiVw2AgrCRHrAM6MXTb62deUY6FwQHv9vQezF6cpTY6uM68H6xxBYnDQOdccOIIwXslmiZ5OwwgOjwjp1qbmyc8xHprnwtCZOVKf-ZKgvgIbR3Skm8cyGaTUqX8lJGeVnNOrOKfiZ41gMGkgWDnBkc9k8MQ3Qo0jJPQSuE_eIaY8jtm8futORnBT3UIwr5A_RI9XyOw'
+            url = AUTHENTICATION_BASE + '/api/v2/users'
+            # resp = requests.get(
+            #     url=url, headers={'Authtoken': request.headers['Authtoken']})
+            # if resp.json()['message'] == 'Not an admin':
+            #     return failure_response(message='Not an admin')
+            # total_data = resp.json()['pages_info']["total_data"]
+            # if total_data > MAX_LIMIT:
+            #     total_loops = math.ceil(total_data / MAX_LIMIT)
+            #     for num in range(1, total_loops+1):
+            #         resp = requests.get(url=url, params={'limit': MAX_LIMIT, 'page': num}, headers={
+            #                             'Authtoken': request.headers['Authtoken']})
+            #         UserRepository.create_user_profile(resp.json()['content'])
+            # else:
+            #     resp = requests.get(url=url, params={'limit': resp.json()[
+            #         'pages_info']["total_data"]}, headers={'Authtoken': request.headers['Authtoken']})
+            #     UserRepository.create_user_profile(resp.json()['content'])
+            # return success_response(message="Successfully stored to mongo collection user")
+            batch_size = 20000
+
+            # Get the total number of users
+            response = requests.get(
+                url, headers={'Authtoken': Authtoken})
+            total_users = response.json()['pages_info']["total_data"]
+            # Insert or update users in batches
+            total_loop = math.ceil(total_users//batch_size)
+            for i in range(1, total_loop+1):
+                tic = time()
+                print("Starting time -------------------> ", tic)
+
+                # Get the next batch of users
+                response = requests.get(
+                    url, params={"page": i, "limit": batch_size}, headers={'Authtoken': Authtoken})
+                users = response.json()
+                # Prepare the bulk write operations
+                bulk_ops = []
+                for user in users['content']:
+                    filter = {"user_name": user["user_name"]}
+                    update = {"$set": user}
+                    bulk_ops.append(pymongo.UpdateOne(
+                        filter, update, upsert=True))
+
+                # Execute the bulk write operations
+                User._get_collection().bulk_write(bulk_ops)
+                toc = time()
+                print()
+                print(i, " :Total time =====>>>>  ", toc-tic)
+
+            return User.save()
+        except Exception as err:
+            return failure_response(str(err))
